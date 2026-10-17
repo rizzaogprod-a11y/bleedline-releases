@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BLEEDLINE · настройки</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  /* цвета берутся из темы Telegram; без анимаций и тяжёлых эффектов — быстро на любом телефоне */
+  :root { --bg: var(--tg-theme-bg-color, #0f1115); --tx: var(--tg-theme-text-color, #f2f3f5); --mu: var(--tg-theme-hint-color, #8a8f99);
+    --ac: var(--tg-theme-button-color, #4c8dff); --acx: var(--tg-theme-button-text-color, #fff); --p1: var(--tg-theme-secondary-bg-color, #1a1d23); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--tx); font: 15px/1.4 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 12px 16px 90px; }
+  h1 { font-size: 18px; margin: 4px 0 2px; } .lead { color: var(--mu); font-size: 13px; margin: 0 0 12px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--mu); margin: 18px 0 8px; font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid color-mix(in srgb, var(--mu) 40%, transparent); background: var(--p1); color: var(--tx); border-radius: 999px; padding: 7px 12px; font-size: 14px; }
+  .chip.on { background: var(--ac); color: var(--acx); border-color: var(--ac); }
+  .desc { color: var(--mu); font-size: 12.5px; min-height: 18px; margin-top: 6px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--p1); border-radius: 12px; padding: 12px 14px; margin-bottom: 6px; }
+  .row small { display: block; color: var(--mu); font-size: 12px; }
+  .sw { width: 46px; height: 28px; border-radius: 99px; background: color-mix(in srgb, var(--mu) 45%, transparent); position: relative; flex: none; border: 0; }
+  .sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; }
+  .sw.on { background: var(--ac); } .sw.on::after { left: 21px; }
+  textarea { width: 100%; background: var(--p1); color: var(--tx); border: 1px solid color-mix(in srgb, var(--mu) 40%, transparent); border-radius: 12px; padding: 10px 12px; font: inherit; resize: vertical; }
+  #save { position: fixed; left: 16px; right: 16px; bottom: 16px; padding: 14px; border: 0; border-radius: 12px; background: var(--ac); color: var(--acx); font-size: 16px; font-weight: 700; }
+  .tg #save { display: none; }   /* в Telegram — его собственная большая кнопка снизу */
+</style>
+</head>
+<body>
+<h1>BLEEDLINE</h1>
+<p class="lead">1) Отправьте песню в чат с ботом (MP3, M4A, WAV — до 20 МБ). 2) Вставьте ниже текст фрагмента. 3) Выберите вид и нажмите «Сделать видео» — видео сделает ваш ПК и пришлёт в чат.</p>
+
+<h2>Текст фрагмента</h2>
+<textarea id="lyrics" rows="7" placeholder="Каждая строка песни — с новой строки"></textarea>
+<div class="desc" id="lyricsInfo"></div>
+
+<h2>Формат</h2><div class="chips" id="aspect"></div>
+<h2>Стиль текста ★ — со своим шрифтом</h2><div class="chips" id="style"></div><div class="desc" id="styleDesc"></div>
+<h2>Анимация</h2><div class="chips" id="anim"></div><div class="desc" id="animDesc"></div>
+<h2>Эффекты</h2><div class="chips" id="fx"></div>
+<h2>Ухудшение качества</h2><div class="chips" id="degrade"></div>
+<h2>Футажи</h2><div class="chips" id="footage"></div>
+<h2>Сколько версий</h2><div class="chips" id="variants"></div>
+<h2>Дополнительно</h2>
+<div class="row"><div>Смысловые переходы<small>«падаем» — провал, «дождь» — шторка, «свет» — вспышка</small></div><button class="sw" data-k="transitions"></button></div>
+<div class="row"><div>Текст дышит голосом<small>слово растёт и светится с силой голоса</small></div><button class="sw" data-k="voice"></button></div>
+<div class="row"><div>Текст за человеком<small>буквы прячутся за героем кадра</small></div><button class="sw" data-k="behind"></button></div>
+<button id="save">🎬 Сделать видео</button>
+
+<script>
+const DATA = {"styles": [{"id": "clean", "name": "Чистый белый", "desc": "Белый жирный текст с мягкой тенью — ничего лишнего"}, {"id": "plate", "name": "Белая плашка", "desc": "Чёрный текст на белых плашках, каждая строка отдельно"}, {"id": "accent", "name": "Акцент цветом", "desc": "Строка белая, главное слово — цветом акцента"}, {"id": "vyaz", "name": "Старая вязь", "desc": "Древнерусская вязь с тёмно-красной тенью"}, {"id": "poster", "name": "Плакат", "desc": "Узкий жирный шрифт заглавными, плотно — как афиша"}, {"id": "outline", "name": "Только контур", "desc": "Узкие буквы без заливки — только контур"}, {"id": "stack", "name": "Стопка", "desc": "Каждое слово на своей строке, очень плотно"}, {"id": "terminal", "name": "Терминал", "desc": "Зелёный моноширинный текст со знаком «>»"}, {"id": "message", "name": "Сообщение", "desc": "Строка в «облачке» мессенджера"}, {"id": "marker", "name": "Маркер", "desc": "Рукописный текст, главное слово выделено маркером"}, {"id": "italic", "name": "Нежный курсив", "desc": "Тонкий курсив с розовым свечением"}, {"id": "magazine", "name": "Журнал", "desc": "Жирная антиква, главное слово — курсивом"}, {"id": "huge", "name": "Огромное слово", "desc": "Главное слово в два раза крупнее остальных"}, {"id": "8bit", "name": "8 бит", "desc": "Пиксельный шрифт с жёсткой тенью, как в старых играх"}, {"id": "chrome", "name": "Хром Y2K", "desc": "Металлический градиент, как логотипы начала 2000-х"}, {"id": "vhs", "name": "VHS-титр", "desc": "Белые моноширинные буквы с красным и голубым сдвигом"}, {"id": "camdate", "name": "Дата с камеры", "desc": "Оранжевые цифровые буквы в углу, как дата на мыльнице"}], "anims": [{"id": "fade", "name": "Fade In", "desc": "Вся строка плавно проявляется"}, {"id": "soft-rise", "name": "Soft Rise", "desc": "Слова по очереди мягко поднимаются и проявляются"}, {"id": "blur-focus", "name": "Blur to Focus", "desc": "Строка появляется из размытия и становится резкой"}, {"id": "reveal", "name": "Slow Reveal", "desc": "Строку открывает невидимая шторка слева направо"}, {"id": "hard-pop", "name": "Hard Pop", "desc": "Слова выпрыгивают из точки с перелётом размера"}, {"id": "impact", "name": "Impact Zoom", "desc": "Строка влетает огромной и «ударяется» на место"}, {"id": "word-by-word", "name": "Word by Word", "desc": "Слова появляются строго по одному, в темпе пения"}, {"id": "typewriter", "name": "Typewriter", "desc": "Буквы печатаются по одной"}, {"id": "karaoke", "name": "Karaoke Highlight", "desc": "Строка видна заранее, спетые слова подсвечиваются"}, {"id": "scramble", "name": "Scramble Decode", "desc": "Случайные символы «расшифровываются» в слово"}, {"id": "rgb", "name": "RGB Split", "desc": "Красная и голубая копии разъезжаются и сходятся"}, {"id": "ghost", "name": "Ghost Fade", "desc": "Медленное проявление с уходящим вверх двойником"}, {"id": "flicker", "name": "Flickering Text", "desc": "Строка мерцает, как неисправная лампа, и загорается"}, {"id": "soft-float", "name": "Soft Float", "desc": "Слова всплывают с лёгким покачиванием"}, {"id": "punch", "name": "Punch In", "desc": "Слово бьёт крупно с дрожью и встаёт на место"}, {"id": "staccato", "name": "Staccato Words", "desc": "Слова появляются мгновенно и чуть вразнобой"}, {"id": "crt", "name": "CRT Flicker", "desc": "Строка включается, как старый кинескоп"}], "fx": ["Ночной VHS", "Ч/Б плёнка", "Глитч-дроп", "Мечтательный"]};
+const o = { aspect: '9:16', style: '', anim: '', fx: '', degrade: '', footage: 'auto', variants: 1, transitions: true, voice: false, behind: false };
+try { Object.assign(o, JSON.parse(localStorage.getItem('bl-opts') || '{}')); } catch (e) {}
+const ta = document.getElementById('lyrics'), info = document.getElementById('lyricsInfo');
+try { ta.value = localStorage.getItem('bl-lyrics') || ''; } catch (e) {}
+const LIMIT = 3000;   // Telegram передаёт боту из Mini App не больше 4096 байт вместе с настройками
+const count = () => {
+  const lines = ta.value.split(String.fromCharCode(10)).map(x => x.trim()).filter(Boolean);
+  const bytes = new TextEncoder().encode(ta.value).length;
+  info.textContent = lines.length ? `${lines.length} строк` + (bytes > LIMIT ? ' — слишком длинный текст: оставьте фрагмент покороче' : '') : 'Пусто — тогда пришлите текст сообщением в чат';
+  info.style.color = bytes > LIMIT ? '#ef4444' : '';
+  try { localStorage.setItem('bl-lyrics', ta.value); } catch (e) {}
+};
+ta.oninput = count; count();
+function chips(id, items, key, descId) {
+  const el = document.getElementById(id);
+  const draw = () => {
+    el.innerHTML = '';
+    for (const it of items) {
+      const b = document.createElement('button'); b.className = 'chip' + (o[key] === it.v ? ' on' : ''); b.textContent = it.t;
+      b.onclick = () => { o[key] = o[key] === it.v && it.v !== '' && key !== 'aspect' && key !== 'footage' && key !== 'variants' ? '' : it.v; draw(); };
+      el.appendChild(b);
+    }
+    if (descId) document.getElementById(descId).textContent = (items.find(x => x.v === o[key]) || {}).d || '';
+  };
+  draw();
+}
+chips('aspect', [{ v: '9:16', t: '9:16 · TikTok' }, { v: '1:1', t: '1:1' }, { v: '16:9', t: '16:9' }], 'aspect');
+chips('style', [{ v: '', t: 'Авто' }, ...DATA.styles.map(s => ({ v: s.id, t: s.name, d: s.desc }))], 'style', 'styleDesc');
+chips('anim', [{ v: '', t: 'Авто' }, ...DATA.anims.map(a => ({ v: a.id, t: a.name, d: a.desc }))], 'anim', 'animDesc');
+chips('fx', [{ v: '', t: 'Без эффектов' }, ...DATA.fx.map(n => ({ v: n, t: n }))], 'fx');
+chips('degrade', [{ v: '', t: 'Нет' }, { v: 'v_phone07', t: 'Телефон 2007' }, { v: 'v_vhs', t: 'VHS-кассета' }, { v: 'v_minidv', t: 'MiniDV 2005' }, { v: 'v_fried', t: 'Пережатое видео' }], 'degrade');
+chips('footage', [{ v: 'auto', t: 'Авто: мои + из папок на ПК' }, { v: 'mine', t: 'Только присланные' }, { v: 'none', t: 'Без футажей' }], 'footage');
+chips('variants', [{ v: 1, t: 'Одну' }, { v: 3, t: '3 варианта' }, { v: 5, t: '5 вариантов' }], 'variants');
+for (const sw of document.querySelectorAll('.sw')) {
+  const k = sw.dataset.k; const draw = () => sw.classList.toggle('on', !!o[k]);
+  sw.onclick = () => { o[k] = !o[k]; draw(); }; draw();
+}
+const tg = window.Telegram && window.Telegram.WebApp;
+function save() {
+  try { localStorage.setItem('bl-opts', JSON.stringify(o)); } catch (e) {}
+  const text = ta.value.trim();
+  if (new TextEncoder().encode(text).length > LIMIT) { alert('Текст слишком длинный — оставьте только нужный фрагмент.'); return; }
+  const data = JSON.stringify({ ...o, text, go: true });
+  // данные уходят боту, окно закрывается, ПК начинает делать видео
+  if (tg && tg.initData !== undefined && tg.sendData) tg.sendData(data);
+  else alert('Откройте эту страницу кнопкой «📱 Открыть BLEEDLINE» в чате с ботом.');
+}
+document.getElementById('save').onclick = save;
+if (tg && tg.initData !== undefined && tg.platform !== 'unknown') {
+  document.body.classList.add('tg'); tg.ready(); tg.expand();
+  tg.MainButton.setText('🎬 Сделать видео'); tg.MainButton.show(); tg.MainButton.onClick(save);
+}
+</script>
+</body>
+</html>
