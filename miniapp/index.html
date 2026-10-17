@@ -115,7 +115,8 @@ const o = { aspect: '9:16', style: '', anim: '', fx: '', degrade: '', footage: '
 try { Object.assign(o, JSON.parse(localStorage.getItem('bl-opts') || '{}')); } catch (e) {}
 let tg = null;
 // данные боту Telegram передаёт только из кнопки под полем ввода; из кнопки меню (есть query_id) — нельзя
-const viaKeyboard = () => !!(tg && tg.initData && !(tg.initDataUnsafe && tg.initDataUnsafe.query_id));
+// из кнопки под полем ввода initData пустой — это нормально; из кнопки меню есть query_id, и отправка невозможна
+const viaKeyboard = () => !!(tg && tg.sendData && tg.platform && tg.platform !== 'unknown' && !(tg.initDataUnsafe && tg.initDataUnsafe.query_id));
 const send = data => {
   if (viaKeyboard()) { tg.sendData(JSON.stringify(data)); return; }
   const msg = 'Чтобы отправить, закройте это окно и откройте приложение кнопкой «📱 Открыть BLEEDLINE» внизу чата с ботом (рядом с полем ввода).';
@@ -180,15 +181,18 @@ loadTg().then(() => {
   setP(90);
   tg = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined ? window.Telegram.WebApp : null;
   const user = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
-  const isAdmin = !!user && (user.username || '').toLowerCase() === ADMIN;   // только вид страницы; права проверяет бот
+  // роль подставляет бот в адрес кнопки (r=admin / user / guest); это только вид страницы — права проверяет бот
+  const role = new URLSearchParams(location.search).get('r');
+  const isAdmin = role === 'admin' || (!!user && (user.username || '').toLowerCase() === ADMIN);
+  const canJob = isAdmin || role === 'user';   // видео делает ПК, к которому подключён этот бот
   document.getElementById('admin').hidden = !isAdmin;
-  document.getElementById('job').hidden = !isAdmin;
-  document.getElementById('guest').hidden = isAdmin;
+  document.getElementById('job').hidden = !canJob;
+  document.getElementById('guest').hidden = canJob;
   if (user) document.getElementById('hello').textContent = `Привет, ${user.first_name || 'друг'}!`;
   document.getElementById('dl').onclick = e => { if (tg && tg.openLink) { e.preventDefault(); tg.openLink(document.getElementById('dl').href); } };
   if (tg && tg.platform !== 'unknown') {
     document.body.classList.add('tg'); tg.ready(); tg.expand();
-    if (isAdmin) { tg.MainButton.setText('🎬 Сделать видео'); tg.MainButton.show(); tg.MainButton.onClick(save); }
+    if (canJob) { tg.MainButton.setText('🎬 Сделать видео'); tg.MainButton.show(); tg.MainButton.onClick(save); }
   }
   setTimeout(() => { clearInterval(tick); setP(100); setTimeout(() => document.getElementById('loader').classList.add('out'), 200); }, Math.max(0, MIN - (Date.now() - T0)));
 });
