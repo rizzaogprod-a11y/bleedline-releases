@@ -1,0 +1,52 @@
+<!doctype html>
+<!-- Вход в BLEEDLINE на ПК: кнопка в сообщении бота ведёт сюда с ключом после «#».
+     Часть после «#» браузер не отправляет на сервер — ключ остаётся на этом компьютере.
+     Страница передаёт ключ программе ссылкой bleedline://login#ключ. Без внешних скриптов. -->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Вход в BLEEDLINE</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0c0c0e; color: #eee; font: 15px/1.5 system-ui, sans-serif; padding: 16px; box-sizing: border-box; }
+  main { width: min(440px, 100%); background: #151518; border: 1px solid #2a2a30; border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+  h1 { margin: 0; font-size: 20px; }
+  .mu { color: #9a9aa2; font-size: 13px; }
+  a.btn, button { display: block; text-align: center; padding: 12px; border-radius: 10px; border: 0; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; }
+  a.btn { background: #e5383b; color: #fff; }
+  button { background: #26262c; color: #eee; }
+  .bad { color: #ff8a8a; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Вход в BLEEDLINE</h1>
+  <div id="ok" hidden>
+    <p>Открываю программу… Если браузер спросит, открыть ли BLEEDLINE, — разрешите.</p>
+    <a class="btn" id="go" href="#">Открыть BLEEDLINE</a>
+    <p class="mu">Не открылось? Скопируйте ключ и вставьте его в окне входа программы («Вставить ключ вручную»).</p>
+    <button id="copy" type="button">Скопировать ключ</button>
+    <p class="mu">Открыли на телефоне? Нажмите кнопку «Войти в BLEEDLINE» в Telegram на том компьютере, где установлена программа.</p>
+  </div>
+  <p id="bad" class="bad" hidden>В ссылке нет ключа. Нажмите «Войти через Telegram» в окне входа программы ещё раз.</p>
+</main>
+<script>
+  (function () {
+    var key = location.hash.slice(1);
+    try { key = decodeURIComponent(key); } catch (e) { /* как есть */ }
+    if (!/^BL1\.[\w-]+\.[\w-]+$/.test(key)) { document.getElementById('bad').hidden = false; return; }
+    history.replaceState(null, '', location.pathname);   // ключ не остаётся в адресной строке
+    var link = 'bleedline://login#' + key;
+    document.getElementById('ok').hidden = false;
+    document.getElementById('go').href = link;
+    document.getElementById('copy').onclick = function () {
+      var b = this;
+      navigator.clipboard.writeText(key).then(function () { b.textContent = 'Ключ скопирован'; }, function () { prompt('Скопируйте ключ:', key); });
+    };
+    location.href = link;
+  })();
+</script>
+</body>
+</html>
